@@ -343,9 +343,11 @@ function Runner({ assessment, template, dog }: { assessment: Assessment; templat
           Back
         </Button>
         {idx < steps.length - 1 ? (
-          <Button onClick={() => goto(steps[idx + 1])}>
-            Next: {steps[idx + 1] === 'modules' ? 'Modules' : steps[idx + 1] === 'finish' ? 'Review' : sections.find((x) => x.id === steps[idx + 1])?.title}
-            <ChevronRight className="size-4" aria-hidden />
+          <Button className="min-w-0" onClick={() => goto(steps[idx + 1])}>
+            <span className="truncate">
+              Next: {steps[idx + 1] === 'modules' ? 'Modules' : steps[idx + 1] === 'finish' ? 'Review' : sections.find((x) => x.id === steps[idx + 1])?.title}
+            </span>
+            <ChevronRight className="size-4 shrink-0" aria-hidden />
           </Button>
         ) : null}
       </div>
@@ -598,10 +600,10 @@ function Review({ assessment, template, dog }: { assessment: Assessment; templat
         }
       />
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-fg-muted">
+        <label className="flex max-w-full min-w-0 items-center gap-2 text-sm text-fg-muted">
           <History className="size-4" aria-hidden />
           Version
-          <select value={revisionId} onChange={(e) => setRevisionId(e.target.value)} className="h-9 rounded-control border border-line bg-white px-2 text-sm text-olive">
+          <select value={revisionId} onChange={(e) => setRevisionId(e.target.value)} className="h-9 min-w-0 rounded-control border border-line bg-white px-2 text-sm text-olive">
             <option value="current">Current (revision {assessment.revision})</option>
             {revs.map((r) => (
               <option key={r.id} value={r.id}>

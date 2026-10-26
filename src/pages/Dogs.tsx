@@ -58,7 +58,7 @@ export function DogsPage() {
         {concerns.length ? (
           <label className="flex items-center gap-2 text-sm text-fg-muted">
             Concern
-            <select value={concern} onChange={(e) => setConcern(e.target.value)} className="h-9 rounded-control border border-line bg-white px-2 text-sm text-olive">
+            <select value={concern} onChange={(e) => setConcern(e.target.value)} className="h-9 min-w-0 rounded-control border border-line bg-white px-2 text-sm text-olive">
               <option value="">Any</option>
               {concerns.map((c) => (
                 <option key={c}>{c}</option>
@@ -73,7 +73,7 @@ export function DogsPage() {
           {dogs.length ? 'Try a different filter.' : 'Add a client and their dog to begin.'}
         </EmptyState>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2" aria-label="Dogs">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Dogs">
           {list.map((d) => (
             <DogCard key={d.id} dog={d} people={currentLinksForDog(links, d.id).map((l) => clientName(clientMap.get(l.clientId)).split(' ')[0])} household={hhMap.get(d.householdId)?.name} />
           ))}
@@ -104,7 +104,7 @@ function DogCard({ dog, people, household }: { dog: Dog; people: string[]; house
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {dog.status !== 'active' ? <Tag tone="honey">{DOG_STATUS[dog.status]}</Tag> : null}
             {dog.concerns.slice(0, 3).map((c) => (
-              <Tag key={c}>{c}</Tag>
+              <Tag key={c} className="whitespace-normal">{c}</Tag>
             ))}
             {dog.concerns.length > 3 ? <Tag>+{dog.concerns.length - 3}</Tag> : null}
           </div>

@@ -91,7 +91,7 @@ export function SearchPage() {
           {people.length ? (
             <section>
               <SectionTitle>Dogs & people</SectionTitle>
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {people.map((h) => (
                   <li key={`${h.kind}${h.id}`}>
                     <Link to={`/${h.kind === 'dog' ? 'dogs' : 'clients'}/${h.id}`} className="flex items-center gap-3 rounded-card border border-line bg-card p-3 hover:border-moss/40">

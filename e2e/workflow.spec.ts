@@ -203,6 +203,8 @@ test('Haley completes the full client workflow', async ({ page }) => {
 
   await test.step('sign out, then an unauthorized account cannot see anything', async () => {
     await page.getByRole('button', { name: 'Sign out' }).click();
+    // Sign-out clears the offline cache, then reloads at /.
+    await page.waitForURL((url) => url.pathname === '/');
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
     await page.goto('/dogs');
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();

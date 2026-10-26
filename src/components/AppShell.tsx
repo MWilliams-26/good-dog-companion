@@ -91,7 +91,7 @@ export function AppShell() {
       {/* Top bar */}
       <header className="no-print sticky top-0 z-20 border-b border-line/70 bg-paper/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4 sm:px-6">
-          <div className="md:hidden">
+          <div className="shrink-0 md:hidden">
             <Link to="/" className="flex items-center gap-2" aria-label="Good Dog Companion, home">
               <img src="/favicon.svg" alt="" className="size-8 rounded-[0.6rem]" />
             </Link>
@@ -99,10 +99,10 @@ export function AppShell() {
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="flex h-11 flex-1 items-center gap-3 rounded-full border border-line bg-card px-4 text-start text-[0.9375rem] text-fg-muted shadow-[0_1px_2px_rgb(35_44_8/0.04)] transition-colors hover:border-line-strong"
+            className="flex h-11 min-w-0 flex-1 items-center gap-3 rounded-full border border-line bg-card px-4 text-start text-[0.9375rem] text-fg-muted shadow-[0_1px_2px_rgb(35_44_8/0.04)] transition-colors hover:border-line-strong"
           >
             <Search className="size-4 text-moss" aria-hidden />
-            <span className="flex-1 truncate">Search dogs, people, notes…</span>
+            <span className="flex-1 truncate"><span className="sm:hidden">Search</span><span className="hidden sm:inline">Search dogs, people, notes…</span></span>
             <kbd className="hidden rounded-md border border-line px-1.5 py-0.5 font-sans text-[0.6875rem] text-fg-muted sm:inline">⌘K</kbd>
           </button>
           <button
