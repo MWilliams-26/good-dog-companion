@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Deny by default. Dog photos and documents are readable and writable only by
+// active authorized users (checked against Firestore), with type and size limits.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthorized() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/authorizedUsers/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/authorizedUsers/$(request.auth.uid)).data.active == true;
+    }
+
+    function allowedUpload() {
+      return request.resource.size < 15 * 1024 * 1024
+        && (request.resource.contentType.matches('image/(jpeg|png|webp|heic|heif)')
+            || request.resource.contentType == 'application/pdf');
+    }
+
+    match /dogs/{dogId}/{fileName} {
+      allow read: if isAuthorized();
+      allow create, update: if isAuthorized() && allowedUpload();
+      allow delete: if isAuthorized();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

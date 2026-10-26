@@ -1,0 +1,135 @@
+@import 'tailwindcss';
+@import '@mwilliams/ui/styles.css';
+@import '@fontsource-variable/montserrat';
+@import '@fontsource-variable/fraunces';
+
+/*
+ * Good Dog Companion — "Field notebook" art direction.
+ * Deep olive ink on warm paper, moss and sage from the Good Dog brand,
+ * Montserrat (the brand's typeface) for interface text and Fraunces for the
+ * names and titles that deserve warmth. The library's semantic tokens are
+ * mapped to this palette so its accessible primitives inherit the identity.
+ */
+[data-theme='gooddog'] {
+  color-scheme: light;
+  --ui-canvas: #fbf8f1;
+  --ui-surface: #f4efe3;
+  --ui-fg: #232c08;
+  --ui-fg-muted: #5c6450;
+  --ui-line: #e3dfd2;
+  --ui-line-strong: #a3a891;
+  --ui-primary: #4f6340;
+  --ui-primary-hover: #3f5133;
+  --ui-on-primary: #fbf8f1;
+  --ui-focus: #4f6340;
+  --ui-danger: #a23d22;
+  --ui-success: #3d6b3a;
+  --ui-scrim: rgb(35 44 8 / 0.45);
+
+  --ui-inverse-color-scheme: dark;
+  --ui-inverse-canvas: #232c08;
+  --ui-inverse-surface: #2f3a12;
+  --ui-inverse-fg: #f5ead7;
+  --ui-inverse-fg-muted: #c9cfbf;
+  --ui-inverse-line: #3d4a1c;
+  --ui-inverse-line-strong: #7d8a62;
+  --ui-inverse-primary: #c9d6b6;
+  --ui-inverse-primary-hover: #dfe8d1;
+  --ui-inverse-on-primary: #232c08;
+  --ui-inverse-focus: #f5ead7;
+  --ui-inverse-danger: #ffb4a0;
+  --ui-inverse-success: #a8d6a0;
+
+  --ui-font-sans: 'Montserrat Variable', ui-sans-serif, system-ui, sans-serif;
+  --ui-font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --ui-heading-weight: 560;
+  --ui-heading-tracking: -0.01em;
+  --ui-button-weight: 600;
+  --ui-button-tracking: 0.01em;
+  --ui-button-case: none;
+  --ui-radius-control: 0.875rem;
+  --ui-radius-card: 1.25rem;
+  --ui-shadow-card: 0 1px 2px rgb(35 44 8 / 0.05), 0 8px 24px rgb(35 44 8 / 0.07);
+}
+
+@theme {
+  --color-olive: #232c08;
+  --color-olive-2: #2f3a12;
+  --color-moss: #4f6340;
+  --color-moss-soft: #61764f;
+  --color-sage: #afbaa6;
+  --color-mist: #e4e8de;
+  --color-cream: #f5ead7;
+  --color-paper: #fbf8f1;
+  --color-card: #fffdf8;
+  --color-clay: #a8492a;
+  --color-clay-soft: #f6e1d6;
+  --color-honey: #9a6b12;
+  --color-honey-soft: #f6ebcf;
+  --color-sky: #3f6274;
+  --color-sky-soft: #e1ebef;
+  --font-serif: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --ease-calm: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+html {
+  background: var(--color-paper);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--ui-font-sans);
+  color: var(--ui-fg);
+  background: var(--color-paper);
+  font-feature-settings: 'tnum' 0;
+  min-height: 100dvh;
+}
+
+/* Paper grain for the canvas: subtle, static, cheap. */
+.paper {
+  background-color: var(--color-paper);
+  background-image: radial-gradient(rgb(35 44 8 / 0.025) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+.font-serif {
+  font-optical-sizing: auto;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+/* Calm entrance for routed pages. */
+@keyframes settle {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.settle { animation: settle 320ms var(--ease-calm) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .settle { animation: none; }
+  *, *::before, *::after { transition-duration: 1ms !important; }
+}
+
+/* Trail line for timelines. */
+.trail { position: relative; }
+.trail::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.75rem 0.75rem;
+  inset-inline-start: 0.6875rem;
+  border-inline-start: 2px dotted var(--color-sage);
+}
+
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Printing reports: only the document. */
+@media print {
+  body { background: white !important; }
+  .no-print { display: none !important; }
+  .print-sheet { box-shadow: none !important; border: 0 !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  @page { margin: 18mm 16mm; }
+}

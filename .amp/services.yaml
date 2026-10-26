@@ -1,0 +1,8 @@
+services:
+  emulators:
+    command: bash scripts/emulators.sh
+  preview:
+    command: npm run build:preview && npx vite preview --port "$PORT" --strictPort
+    health: /
+    portal:
+      title: Good Dog Companion (preview)

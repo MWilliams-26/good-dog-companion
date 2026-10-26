@@ -1,0 +1,13 @@
+node_modules
+dist
+dev-dist
+.emulator-data
+*.log
+.env
+.env.local
+test-results
+playwright-report
+functions/node_modules
+.amp/in
+firebase-export-*
+.amp/portals

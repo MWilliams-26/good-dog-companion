@@ -1,0 +1,313 @@
+rules_version = '2';
+
+// Good Dog Companion — deny by default.
+// Only active accounts listed in authorizedUsers/{uid} can read or write
+// practice records. authorizedUsers and auditEvents are written by the Admin
+// SDK (scripts/grant-access.mjs and Cloud Functions) only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAuthorized() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/authorizedUsers/$(request.auth.uid))
+        && get(/databases/$(database)/documents/authorizedUsers/$(request.auth.uid)).data.active == true;
+    }
+
+    function data() {
+      return request.resource.data;
+    }
+
+    // Actor and server-timestamp metadata required on every write.
+    function validCreateMeta() {
+      return data().createdBy == request.auth.uid
+        && data().updatedBy == request.auth.uid
+        && data().createdAt == request.time
+        && data().updatedAt == request.time;
+    }
+
+    function validUpdateMeta() {
+      return data().createdBy == resource.data.createdBy
+        && data().createdAt == resource.data.createdAt
+        && data().updatedBy == request.auth.uid
+        && data().updatedAt == request.time;
+    }
+
+    function str(field, maxLen) {
+      return data()[field] is string && data()[field].size() <= maxLen;
+    }
+
+    function optStr(field, maxLen) {
+      return !(field in data()) || data()[field] == null || str(field, maxLen);
+    }
+
+    function nonEmpty(field, maxLen) {
+      return str(field, maxLen) && data()[field].size() > 0;
+    }
+
+    function isoDate(field) {
+      return data()[field] is string && data()[field].matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function optIsoDate(field) {
+      return !(field in data()) || data()[field] == null || isoDate(field);
+    }
+
+    function stringList(field, maxItems) {
+      return data()[field] is list && data()[field].size() <= maxItems;
+    }
+
+    function canCreate(valid) {
+      return isAuthorized() && validCreateMeta() && valid;
+    }
+
+    function canUpdate(valid) {
+      return isAuthorized() && validUpdateMeta() && valid;
+    }
+
+    // ── Validators per record type ──────────────────────────────────────
+
+    function validClient() {
+      return nonEmpty('firstName', 80) && str('lastName', 80)
+        && data().status in ['inquiry', 'new', 'active', 'inactive', 'returning']
+        && data().preferredContact in ['text', 'call', 'email']
+        && nonEmpty('householdId', 64)
+        && optStr('email', 200) && optStr('phone', 40)
+        && optStr('notes', 20000) && optStr('privateNotes', 20000)
+        && optIsoDate('inquiryDate');
+    }
+
+    function validHousehold() {
+      return nonEmpty('name', 120) && data().members is list && data().members.size() <= 30
+        && optStr('address', 300) && optStr('otherAnimals', 2000);
+    }
+
+    function validDog() {
+      return nonEmpty('name', 80)
+        && data().sex in ['female', 'male', 'unknown']
+        && data().status in ['active', 'paused', 'graduated', 'archived']
+        && nonEmpty('householdId', 64)
+        && stringList('concerns', 40)
+        && data().safetyNotes is list && data().safetyNotes.size() <= 20
+        && optIsoDate('birthDate') && optStr('summary', 5000)
+        && (!('weightLbs' in data()) || data().weightLbs == null || data().weightLbs is number);
+    }
+
+    function validRelationship() {
+      return nonEmpty('clientId', 64) && nonEmpty('dogId', 64)
+        && data().role in ['guardian', 'co-guardian', 'caregiver', 'foster', 'former guardian']
+        && data().isPrimary is bool
+        && isoDate('startDate') && optIsoDate('endDate');
+    }
+
+    function validTemplateDefinition() {
+      return nonEmpty('name', 120) && data().sections is list && data().modules is list
+        && data().sections.size() <= 40 && data().modules.size() <= 40;
+    }
+
+    function validAssessment() {
+      return nonEmpty('dogId', 64) && stringList('clientIds', 10)
+        && nonEmpty('templateVersionId', 128) && data().templateVersion is int
+        && data().mode in ['initial', 'followUp']
+        && data().status in ['draft', 'complete']
+        && isoDate('date') && data().responses is map
+        && stringList('enabledModules', 20) && data().revision is int
+        && optStr('privateNotes', 50000);
+    }
+
+    function validConsultation() {
+      return stringList('dogIds', 10) && data().dogIds.size() > 0 && stringList('clientIds', 10)
+        && data().type in ['initial', 'followUp', 'virtual', 'checkIn']
+        && data().format in ['structured', 'freeform']
+        && isoDate('date') && stringList('goalIds', 50)
+        && optStr('observations', 50000) && optStr('privateNotes', 50000)
+        && optStr('freeformNotes', 50000) && optStr('homework', 20000);
+    }
+
+    function validPlan() {
+      return nonEmpty('dogId', 64) && nonEmpty('title', 200)
+        && data().status in ['active', 'paused', 'completed', 'archived']
+        && isoDate('startDate') && optIsoDate('reviewDate');
+    }
+
+    function validGoal() {
+      return nonEmpty('planId', 64) && nonEmpty('dogId', 64) && nonEmpty('title', 300)
+        && data().priority is int
+        && data().status in ['notStarted', 'inProgress', 'maintaining', 'achieved', 'paused', 'revised']
+        && stringList('successCriteria', 30)
+        && data().exercises is list && data().exercises.size() <= 30
+        && data().milestones is list && data().milestones.size() <= 30;
+    }
+
+    function validObservation() {
+      return nonEmpty('goalId', 64) && nonEmpty('planId', 64) && nonEmpty('dogId', 64)
+        && isoDate('date') && nonEmpty('observation', 10000)
+        && data().source in ['reported', 'observed'];
+    }
+
+    function validAppointment() {
+      return stringList('dogIds', 10) && stringList('clientIds', 10)
+        && data().type in ['initial', 'followUp', 'virtual', 'checkIn', 'discoveryCall']
+        && data().start is string && data().durationMinutes is int
+        && data().status in ['scheduled', 'completed', 'cancelled', 'noShow'];
+    }
+
+    function validFollowUp() {
+      return nonEmpty('title', 300) && isoDate('dueDate')
+        && data().status in ['open', 'done'] && optStr('notes', 5000);
+    }
+
+    function validReport() {
+      return data().kind in ['consultation', 'trainingPlan', 'assessment']
+        && nonEmpty('sourceId', 64) && nonEmpty('dogId', 64) && nonEmpty('title', 300)
+        && data().sections is list && data().sections.size() <= 60
+        && data().status in ['draft', 'final'];
+    }
+
+    function validDocument() {
+      return nonEmpty('dogId', 64) && nonEmpty('name', 300)
+        && data().storagePath is string
+        && data().storagePath.matches('^dogs/' + data().dogId + '/.+')
+        && data().size is int && data().size <= 15 * 1024 * 1024
+        && data().kind in ['photo', 'document'];
+    }
+
+    // ── Access control ─────────────────────────────────────────────────
+
+    match /authorizedUsers/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /auditEvents/{id} {
+      allow read: if isAuthorized();
+      allow write: if false;
+    }
+
+    match /clients/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validClient());
+      allow update: if canUpdate(validClient());
+      allow delete: if false; // archive instead, history is preserved
+    }
+
+    match /households/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validHousehold());
+      allow update: if canUpdate(validHousehold());
+      allow delete: if false;
+    }
+
+    match /dogs/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validDog());
+      allow update: if canUpdate(validDog());
+      allow delete: if false;
+    }
+
+    match /clientDogs/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validRelationship());
+      // Relationships are ended (endDate), never rewired to other people or dogs.
+      allow update: if canUpdate(validRelationship()
+        && data().clientId == resource.data.clientId
+        && data().dogId == resource.data.dogId);
+      allow delete: if false;
+    }
+
+    match /assessmentTemplates/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validTemplateDefinition() && data().currentVersion is int);
+      allow update: if canUpdate(validTemplateDefinition() && data().currentVersion is int);
+      allow delete: if false;
+    }
+
+    // Published template versions are immutable.
+    match /assessmentTemplateVersions/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validTemplateDefinition()
+        && nonEmpty('templateId', 64) && data().version is int
+        && id == data().templateId + '_v' + string(data().version));
+      allow update, delete: if false;
+    }
+
+    match /assessments/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validAssessment());
+      allow update: if canUpdate(validAssessment()
+        && data().dogId == resource.data.dogId
+        && data().templateVersionId == resource.data.templateVersionId
+        && data().revision >= resource.data.revision);
+      allow delete: if false;
+
+      // Snapshots taken when an assessment is completed or reopened. Immutable.
+      match /revisions/{revId} {
+        allow read: if isAuthorized();
+        allow create: if canCreate(data().assessmentId == id && data().revision is int
+          && data().responses is map && nonEmpty('reason', 300));
+        allow update, delete: if false;
+      }
+    }
+
+    match /consultations/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validConsultation());
+      allow update: if canUpdate(validConsultation());
+      allow delete: if false;
+    }
+
+    match /trainingPlans/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validPlan());
+      allow update: if canUpdate(validPlan() && data().dogId == resource.data.dogId);
+      allow delete: if false;
+    }
+
+    match /goals/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validGoal());
+      allow update: if canUpdate(validGoal() && data().planId == resource.data.planId);
+      allow delete: if false;
+    }
+
+    // Progress observations are a dated record; corrections are allowed,
+    // deletion is not.
+    match /progressObservations/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validObservation());
+      allow update: if canUpdate(validObservation() && data().goalId == resource.data.goalId);
+      allow delete: if false;
+    }
+
+    match /appointments/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validAppointment());
+      allow update: if canUpdate(validAppointment());
+      allow delete: if false; // cancel instead
+    }
+
+    match /followUps/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validFollowUp());
+      allow update: if canUpdate(validFollowUp());
+      allow delete: if isAuthorized();
+    }
+
+    match /reportDrafts/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validReport());
+      allow update: if canUpdate(validReport() && data().sourceId == resource.data.sourceId);
+      allow delete: if isAuthorized();
+    }
+
+    match /dogDocuments/{id} {
+      allow read: if isAuthorized();
+      allow create: if canCreate(validDocument());
+      allow update: if canUpdate(validDocument() && data().storagePath == resource.data.storagePath);
+      allow delete: if isAuthorized();
+    }
+  }
+}
