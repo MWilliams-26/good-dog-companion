@@ -11,6 +11,7 @@ test('wrong password shows a friendly error and no data', async ({ page }) => {
 });
 
 test('the database itself rejects an unauthorized account (server-side rules)', async ({ request }) => {
+  test.skip(!!process.env.E2E_DEMO, 'The demo build has no server to test.');
   const token = async (who: typeof HALEY) => (await (await request.post(AUTH, { data: { ...who, returnSecureToken: true } })).json()).idToken as string;
   const denied = await request.get(DOC, { headers: { Authorization: `Bearer ${await token(INTRUDER)}` } });
   expect(denied.status()).toBe(403);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
-import { ChevronRight, Database, FileSpreadsheet, LogOut, ShieldCheck, SlidersHorizontal, History } from 'lucide-react';
+import { ChevronRight, Database, FileSpreadsheet, LogOut, ShieldCheck, SlidersHorizontal, History, RotateCcw } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { useAuth } from '../stores/auth';
 import { usePractice, clientName } from '../stores/practice';
@@ -14,7 +14,7 @@ import { CONSULT_TYPE } from '../lib/labels';
 import { fmtDate, todayISO } from '../lib/dates';
 import { toast } from '../stores/toast';
 import type { Appointment, AuditEvent, Consultation, FollowUp, Goal } from '../lib/types';
-import { usingEmulators } from '../lib/firebase';
+import { demoMode, usingEmulators } from '../lib/firebase';
 
 export function SettingsPage() {
   const { profile, user, signOut } = useAuth();
@@ -173,8 +173,28 @@ export function SettingsPage() {
               Sign out
             </Button>
           </div>
-          <p className="mt-3 text-xs text-fg-muted">Signing out also removes the offline copy of practice records from this device.</p>
+          {demoMode ? null : <p className="mt-3 text-xs text-fg-muted">Signing out also removes the offline copy of practice records from this device.</p>}
         </Card>
+
+        {demoMode ? (
+          <Card className="p-5">
+            <SectionTitle>Demo data</SectionTitle>
+            <p className="text-sm text-fg-muted">
+              This demo keeps its fictional practice in this browser only. Nothing you enter is sent anywhere. Start over to erase your changes and
+              restore the original demo records, dated from today.
+            </p>
+            <Button
+              variant="secondary"
+              className="mt-4"
+              onClick={() => {
+                if (confirm('Erase your changes on this device and restore the demo practice?')) void import('../demo/store').then((m) => m.resetDemo());
+              }}
+            >
+              <RotateCcw className="size-4" aria-hidden />
+              Start over with fresh demo data
+            </Button>
+          </Card>
+        ) : null}
 
         <Link to="/settings/template" className="block">
           <Card className="flex items-center gap-4 p-5 transition-colors hover:border-moss/40">
@@ -247,7 +267,7 @@ export function SettingsPage() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-fg-muted">Recorded server-side by Cloud Functions for every change.</p>
+            <p className="text-sm text-fg-muted">{demoMode ? 'Changes you make in the demo appear here.' : 'Recorded server-side by Cloud Functions for every change.'}</p>
           )}
         </Card>
 
@@ -263,6 +283,7 @@ export function SettingsPage() {
             <li>Consultant-only notes and safety notes are never added to client reports unless you include them.</li>
             <li>No analytics or tracking. Nothing is emailed automatically.</li>
             {usingEmulators ? <li>This preview runs on a local Firebase emulator with fictional records.</li> : null}
+            {demoMode ? <li>This demo has no server: its fictional records are stored only in this browser.</li> : null}
           </ul>
         </Card>
       </div>

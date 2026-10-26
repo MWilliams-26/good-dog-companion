@@ -26,6 +26,22 @@ npm run test:e2e       # Playwright, desktop + phone; needs `npm run emulators` 
                        # Resets and reseeds the emulator first.
 ```
 
+## Public demo on Cloudflare (no backend)
+
+`npm run build:demo` builds the app with the Firebase SDK replaced by in-browser stand-ins (`src/demo/firebase/`, wired up by the `demo` mode alias in `vite.config.ts`). Each visitor gets their own copy of the fictional practice in localStorage, with uploads in IndexedDB; nothing is sent to a server. The sign-in form is prefilled with the demo account, and Settings → *Start over with fresh demo data* restores the original records, dated from today.
+
+Cloudflare deploys it from GitHub (Workers & Pages → Create → Import a repository):
+
+| Setting | Value |
+|---|---|
+| Build command | `npm run build:demo` |
+| Deploy command | `npx wrangler deploy` (uses `wrangler.jsonc`: static assets from `dist/`, SPA routing) |
+| Node version | 22 (from `.node-version`) |
+
+`public/_headers` adds `noindex` and the same security headers as Firebase Hosting. `npm run test:e2e:demo` runs the Playwright suite against the demo build.
+
+The demo is a prototype for feedback only: never enter real client details, and expect each browser to keep its own separate data.
+
 ## Production deployment (needs Haley's decision and credentials)
 
 Nothing in this repository is deployed. To go live:

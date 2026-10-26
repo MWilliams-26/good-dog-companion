@@ -6,7 +6,7 @@ import { LockKeyhole } from 'lucide-react';
 import { useAuth } from '../stores/auth';
 import { Button, ErrorNote } from '../components/ui';
 import { TextInput } from '../components/form';
-import { usingEmulators } from '../lib/firebase';
+import { demoMode, usingEmulators } from '../lib/firebase';
 
 const schema = z.object({
   email: z.string().trim().email('Enter the email address for your account.'),
@@ -47,7 +47,11 @@ function Frame({ children }: { children: React.ReactNode }) {
 export function LoginPage() {
   const signIn = useAuth((s) => s.signIn);
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState } = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState } = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    // The public demo opens with its fictional account filled in.
+    defaultValues: demoMode ? { email: 'haley@gooddog.demo', password: 'GoodDog!2026' } : undefined,
+  });
 
   const onSubmit = handleSubmit(async ({ email, password }) => {
     setError(null);
@@ -78,10 +82,11 @@ export function LoginPage() {
         <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden />
         Private practice records. Accounts are created by the practice owner; there is no public sign-up.
       </p>
-      {usingEmulators ? (
+      {usingEmulators || demoMode ? (
         <div className="mt-6 rounded-2xl border border-honey/25 bg-honey-soft/60 p-4 text-xs leading-relaxed text-[#6d4b0b]">
-          <p className="font-semibold">Preview sign-in (fictional data)</p>
+          <p className="font-semibold">{demoMode ? 'Demo sign-in (fictional practice)' : 'Preview sign-in (fictional data)'}</p>
           <p className="mt-1">haley@gooddog.demo · GoodDog!2026</p>
+          {demoMode ? <p className="mt-1">Everything you change stays in this browser.</p> : null}
         </div>
       ) : null}
     </Frame>

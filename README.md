@@ -28,7 +28,8 @@ members    safety     versions,     criteria,        or quick    observations ap
 | Reports: editable consultation, plan and assessment summaries; private/safety sections excluded until chosen; print, PDF, copy | `src/lib/reports.ts`, `src/pages/Report.tsx` |
 | Exports: CSV per record type, complete JSON backup | `src/lib/exports.ts`, `src/pages/Settings.tsx` |
 | Security rules, audit trail function | `firestore.rules`, `storage.rules`, `functions/index.js` |
-| Fictional demo practice (16 clients, 16 dogs, 14 households) | `scripts/seed.mjs` |
+| Fictional demo practice (16 clients, 16 dogs, 14 households) | `src/demo/demoData.ts`, seeded by `scripts/seed.mjs` |
+| Backend-free demo build for sharing (data stays in the visitor's browser), deployed to Cloudflare | `src/demo/`, `wrangler.jsonc` |
 
 ## Run it
 
@@ -37,6 +38,8 @@ npm install && (cd functions && npm install)
 npm run emulators   # Firebase Emulator Suite; seeds demo data when empty
 npm run dev         # http://localhost:5173 — haley@gooddog.demo / GoodDog!2026
 ```
+
+**Shareable demo** (no Firebase needed): `npm run build:demo` produces a static site in `dist/` in which the fictional practice lives in each visitor's browser. See *Public demo on Cloudflare* in [docs/SETUP.md](docs/SETUP.md).
 
 Full setup, tests and production deployment: [docs/SETUP.md](docs/SETUP.md). Data model: [docs/SCHEMA.md](docs/SCHEMA.md). Backups: [docs/DATA_RECOVERY.md](docs/DATA_RECOVERY.md). Build notes: [docs/IMPLEMENTATION_LOG.md](docs/IMPLEMENTATION_LOG.md).
 

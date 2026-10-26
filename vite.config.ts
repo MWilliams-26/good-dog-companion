@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { fileURLToPath } from 'node:url';
 
 // In emulator mode the browser talks to the Firebase Emulator Suite through
 // this server (same origin), so the app also works behind a private preview
@@ -14,7 +15,14 @@ const emulatorProxy = {
   '/v0/b': 'http://127.0.0.1:9199',
 };
 
-export default defineConfig({
+// The public demo build (`--mode demo`) replaces the Firebase SDK with
+// in-browser stand-ins (src/demo/firebase), so it needs no backend.
+const demoAlias = [
+  { find: /^firebase\/(app|auth|firestore|storage)$/, replacement: fileURLToPath(new URL('./src/demo/firebase/$1.ts', import.meta.url)) },
+];
+
+export default defineConfig(({ mode }) => ({
+  resolve: { alias: mode === 'demo' ? demoAlias : [] },
   plugins: [
     react(),
     tailwindcss(),
@@ -47,4 +55,4 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],
   },
-});
+}));

@@ -12,6 +12,7 @@ A concise record of how the first build of Good Dog Companion was produced, the 
 6. **Work records.** Structured sessions (4 types) and quick notes, goal observations and milestones, follow-up reminders; training plans generated from assessment recommendations; a schedule with upcoming, follow-up and past views.
 7. **Reports and data ownership.** Consultation, plan and assessment reports with sensitive sections excluded unless explicitly confirmed; print, PDF, copy text, mark final. CSV exports (private fields opt-in), full JSON backup, audit trail view.
 8. **Demo data, tests and docs.** Fictional NYC practice (16 clients, 16 dogs, 14 households). Unit, rules and Playwright suites. README, SETUP, SCHEMA, DATA_RECOVERY and the generated template reference.
+9. **Shareable demo.** A backend-free build (`npm run build:demo`) for showing Haley on her own phone or laptop: the Firebase SDK is swapped for in-browser stand-ins, the fictional practice is seeded into each visitor's browser, and Cloudflare serves it from the GitHub repository. The whole Playwright suite also runs against this build (`npm run test:e2e:demo`). A WebKit review at iPhone sizes found and fixed sideways scrolling on phones narrower than 412px (header search, lists, long selects).
 
 ## Decisions
 
@@ -19,6 +20,7 @@ A concise record of how the first build of Good Dog Companion was produced, the 
 - **"Haley" Wilson.** The website spells the founder's name Haley; the brief said Hailey. The app follows the website.
 - **No photography.** No real client imagery was available, and generated dog or client photos would misrepresent the practice, so none were created. Asset sources: Lucide icons (ISC), Montserrat and Fraunces via Fontsource (SIL OFL).
 - **No automated client emails or calendar sync.** Booking stays in Acuity (linked from Schedule); the app records sessions and follow-ups but does not message clients.
+- **Demo without a backend.** A shareable link should not depend on this orb or on a Firebase project nobody has created yet, so the demo keeps data in the visitor's browser. It is for feedback only; real records belong in the production Firebase setup.
 - **Private by default.** Private answers and sensitive report sections never leave the app unless Haley opts in at export time.
 
 ## Test results at handoff
@@ -36,6 +38,7 @@ A concise record of how the first build of Good Dog Companion was produced, the 
 - **Not deployed.** Needs a business-owned Firebase project (Blaze plan for Functions), the web config, and Haley's account; see `docs/SETUP.md`.
 - **App Check, MFA and email verification** are not enabled yet; turn them on with the real domain.
 - **Backups:** enable Firestore point-in-time recovery and scheduled exports in production (`docs/DATA_RECOVERY.md`). The in-app JSON backup is a manual complement, not a replacement.
+- **Demo data is per browser.** Haley's phone and laptop each have their own copy; changes don't sync between them, and clearing browser data restores the original demo.
 - **Preview data resets** to the demo seed whenever the emulator service restarts, and the Playwright run reseeds it. Changes made in the preview are not durable.
 - **PDF export** uses jsPDF's built-in Helvetica rather than the brand fonts; printing from the browser keeps the brand typography.
 - **Bundle size:** a single ~1.35 MB chunk (Firebase, jsPDF, the template). Route-level code splitting would speed up the first load on slow phones.

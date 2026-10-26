@@ -14,7 +14,9 @@
     "grant": "node scripts/grant-access.mjs",
     "test:rules": "firebase emulators:exec --config firebase.test.json --project demo-good-dog-rules --only firestore,storage \"vitest run --config vitest.rules.config.ts\"",
     "test:e2e": "playwright test",
-    "build:preview": "vite build --mode emulator"
+    "build:preview": "vite build --mode emulator",
+    "build:demo": "tsc -p tsconfig.json --noEmit && vite build --mode demo",
+    "test:e2e:demo": "E2E_DEMO=1 playwright test"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^6.0.0",

@@ -11,6 +11,8 @@ import { connectStorageEmulator, getStorage } from 'firebase/storage';
 const env = import.meta.env;
 
 export const usingEmulators = env.VITE_USE_EMULATORS === 'true';
+/** Public demo build: Firebase is replaced by in-browser stand-ins (src/demo). */
+export const demoMode = env.VITE_DEMO === 'true';
 
 const app = initializeApp({
   apiKey: env.VITE_FIREBASE_API_KEY,

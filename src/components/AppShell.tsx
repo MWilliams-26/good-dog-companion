@@ -6,7 +6,7 @@ import { usePractice } from '../stores/practice';
 import { searchPractice } from '../lib/search';
 import { DogAvatar, ClientInitials } from './DogAvatar';
 import { Toaster } from './Toaster';
-import { usingEmulators } from '../lib/firebase';
+import { demoMode, usingEmulators } from '../lib/firebase';
 
 const NAV = [
   { to: '/', label: 'Home', icon: Home, end: true },
@@ -120,9 +120,11 @@ export function AppShell() {
         </div>
       </header>
 
-      {usingEmulators ? (
+      {usingEmulators || demoMode ? (
         <p className="no-print border-b border-honey/20 bg-honey-soft/70 px-4 py-1.5 text-center text-xs font-medium text-[#6d4b0b]">
-          Preview with fictional demonstration records. No real client data.
+          {demoMode
+            ? 'Demo with fictional records. Your changes stay on this device.'
+            : 'Preview with fictional demonstration records. No real client data.'}
         </p>
       ) : null}
 
