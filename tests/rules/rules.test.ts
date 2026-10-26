@@ -84,6 +84,12 @@ describe('validated writes', () => {
     await assertFails(setDoc(doc(db, 'clients', 'c6'), client(HALEY, { status: 'vip' })));
     await assertFails(setDoc(doc(db, 'clients', 'c7'), client(HALEY, { privateNotes: 'x'.repeat(20001) })));
   });
+  it('accepts a dog added before its people and home, but not a malformed home', async () => {
+    const db = env.authenticatedContext(HALEY).firestore();
+    const dog = { name: 'Pup', sex: 'unknown', status: 'active', concerns: [], safetyNotes: [], ...create(HALEY) };
+    await assertSucceeds(setDoc(doc(db, 'dogs', 'd2'), dog));
+    await assertFails(setDoc(doc(db, 'dogs', 'd3'), { ...dog, householdId: 42 }));
+  });
   it('requires updatedBy/updatedAt on update and keeps createdBy fixed', async () => {
     const db = env.authenticatedContext(HALEY).firestore();
     await assertSucceeds(updateDoc(doc(db, 'clients', 'c1'), { notes: 'ok', updatedBy: HALEY, updatedAt: serverTimestamp() }));

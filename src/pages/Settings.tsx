@@ -72,7 +72,7 @@ export function SettingsPage() {
           { header: 'Birthday', value: (d) => d.birthDate },
           { header: 'Weight (lb)', value: (d) => d.weightLbs },
           { header: 'Status', value: (d) => d.status },
-          { header: 'Household', value: (d) => hhName(d.householdId) },
+          { header: 'Household', value: (d) => hhName(d.householdId ?? '') },
           { header: 'People', value: (d) => links.filter((l) => l.dogId === d.id && !l.endDate).map((l) => `${cName(l.clientId)} (${l.role})`) },
           { header: 'Concerns', value: (d) => d.concerns },
           { header: 'Came from', value: (d) => d.acquisition },

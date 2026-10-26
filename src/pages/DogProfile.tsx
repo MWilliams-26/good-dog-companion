@@ -45,7 +45,7 @@ export function DogProfilePage() {
   const dogLinks = links.filter((l) => l.dogId === dog.id);
   const current = dogLinks.filter((l) => !l.endDate).sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
   const clientMap = new Map(clients.map((c) => [c.id, c]));
-  const housemates = dogs.filter((d) => d.householdId === dog.householdId && d.id !== dog.id && !d.archived);
+  const housemates = dog.householdId ? dogs.filter((d) => d.householdId === dog.householdId && d.id !== dog.id && !d.archived) : [];
   const activePlan = records.plans.find((p) => p.status === 'active');
   const latestAssessment = records.assessments[0];
   const startOfToday = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
@@ -245,6 +245,19 @@ export function DogProfilePage() {
 
                   <Card className="p-5">
                     <SectionTitle>People & home</SectionTitle>
+                    {dogLinks.length === 0 ? (
+                      <div className="text-[0.9375rem] text-fg-muted">
+                        <p>No people linked yet.</p>
+                        <div className="no-print mt-3 flex flex-wrap gap-2">
+                          <ButtonLink to={`/clients/new?dog=${dog.id}`} size="sm">
+                            New client for {dog.name}
+                          </ButtonLink>
+                          <ButtonLink to={`/dogs/${dog.id}/edit`} variant="secondary" size="sm">
+                            Link an existing client
+                          </ButtonLink>
+                        </div>
+                      </div>
+                    ) : null}
                     <ul className="flex flex-col gap-2">
                       {dogLinks
                         .sort((a, b) => Number(!!a.endDate) - Number(!!b.endDate))

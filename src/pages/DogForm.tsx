@@ -24,7 +24,7 @@ export const dogSchema = z.object({
   ageNote: z.string().max(80).optional(),
   weightLbs: z.union([z.coerce.number().positive('Weight must be positive').max(250), z.literal('')]).optional(),
   coat: z.string().max(120).optional(),
-  householdId: z.string().min(1, 'Choose a household.'),
+  householdId: z.string().optional(),
   acquisition: z.string().max(120).optional(),
   acquisitionDate: optionalDate,
   rescueOrg: z.string().max(200).optional(),
@@ -47,7 +47,7 @@ export function toDogRecord(v: z.output<typeof dogSchema>): Omit<Dog, keyof impo
     ageNote: v.ageNote || undefined,
     weightLbs: v.weightLbs === '' || v.weightLbs === undefined ? undefined : Number(v.weightLbs),
     coat: v.coat || undefined,
-    householdId: v.householdId,
+    householdId: v.householdId || undefined,
     acquisition: v.acquisition || undefined,
     acquisitionDate: v.acquisitionDate || undefined,
     rescueOrg: v.rescueOrg || undefined,
@@ -62,10 +62,9 @@ export function toDogRecord(v: z.output<typeof dogSchema>): Omit<Dog, keyof impo
 export const ACQUISITION = ['Rescue or shelter', 'Foster (current)', 'Breeder', 'Previous owner / rehome', 'Found as a stray', 'Other'];
 
 /** Dog fields shared by the dog form and the new-client intake. */
-export function DogFields({ form, showHousehold = true }: { form: ReturnType<typeof useForm<DogFormValues>>; showHousehold?: boolean }) {
+export function DogFields({ form }: { form: ReturnType<typeof useForm<DogFormValues>> }) {
   const { register, control, formState } = form;
   const e = formState.errors;
-  const households = usePractice((s) => s.households);
   const safety = useFieldArray({ control, name: 'safetyNotes' });
   return (
     <div className="flex flex-col gap-5">
@@ -81,16 +80,6 @@ export function DogFields({ form, showHousehold = true }: { form: ReturnType<typ
         <TextInput label="Weight (lb)" type="number" inputMode="decimal" step="0.1" error={e.weightLbs?.message} {...register('weightLbs')} />
         <TextInput label="Coat & markings" {...register('coat')} />
       </div>
-      {showHousehold ? (
-        <SelectInput
-          label="Household"
-          required
-          error={e.householdId?.message}
-          placeholder="Choose household"
-          options={households.map((h) => ({ value: h.id, label: h.name }))}
-          {...register('householdId')}
-        />
-      ) : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectInput label="Came from" placeholder="—" options={ACQUISITION.map((a) => ({ value: a, label: a }))} {...register('acquisition')} />
         <TextInput label="Joined the family" type="date" error={e.acquisitionDate?.message} {...register('acquisitionDate')} />
@@ -132,15 +121,16 @@ export function DogFormPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { dogs, clients, links } = usePractice();
+  const { dogs, clients, households, links } = usePractice();
   const existing = id ? dogs.find((d) => d.id === id) : undefined;
   const presetClient = clients.find((c) => c.id === params.get('client'));
+  const [ownerId, setOwnerId] = useState('');
 
   const form = useForm<DogFormValues>({
     resolver: zodResolver(dogSchema),
     defaultValues: existing
       ? { ...existing, weightLbs: existing.weightLbs ?? '', breed: existing.breed ?? '', birthDate: existing.birthDate ?? '', acquisitionDate: existing.acquisitionDate ?? '' }
-      : { name: '', sex: 'unknown', concerns: [], safetyNotes: [], status: 'active', householdId: presetClient?.householdId ?? '' },
+      : { name: '', sex: 'unknown', concerns: [], safetyNotes: [], status: 'active' },
   });
 
   if (id && !existing) return <NotFound what="Dog" back={{ to: '/dogs', label: 'Dogs' }} />;
@@ -155,12 +145,12 @@ export function DogFormPage() {
         toast(`${values.name} updated`);
         navigate(`/dogs/${existing.id}`);
       } else {
-        const dogId = w.create<Dog>('dogs', toDogRecord(values));
-        // Link the dog to the people in its household (or the preset client).
-        const people = presetClient ? [presetClient] : clients.filter((c) => c.householdId === values.householdId && !c.archived);
-        people.forEach((c, i) =>
-          w.create<ClientDogRelationship>('clientDogs', { clientId: c.id, dogId, role: 'guardian', isPrimary: i === 0, startDate: values.acquisitionDate || todayISO(), endDate: null }),
-        );
+        // People are optional: a pup can be added first and linked to its people later.
+        const owner = presetClient ?? clients.find((c) => c.id === ownerId);
+        const dogId = w.create<Dog>('dogs', toDogRecord({ ...values, householdId: owner?.householdId }));
+        if (owner) {
+          w.create<ClientDogRelationship>('clientDogs', { clientId: owner.id, dogId, role: 'guardian', isPrimary: true, startDate: values.acquisitionDate || todayISO(), endDate: null });
+        }
         await w.commit();
         toast(`${values.name} added`);
         navigate(`/dogs/${dogId}`);
@@ -172,12 +162,35 @@ export function DogFormPage() {
 
   return (
     <div>
-      <PageHeader title={existing ? `Edit ${existing.name}` : 'Add a dog'} back={existing ? { to: `/dogs/${existing.id}`, label: existing.name } : { to: '/dogs', label: 'Dogs' }} />
+      <PageHeader
+        title={existing ? `Edit ${existing.name}` : 'Add a dog'}
+        eyebrow={!existing && presetClient ? `For ${clientName(presetClient)}` : undefined}
+        back={existing ? { to: `/dogs/${existing.id}`, label: existing.name } : presetClient ? { to: `/clients/${presetClient.id}`, label: clientName(presetClient) } : { to: '/dogs', label: 'Dogs' }}
+      />
       <form onSubmit={onSubmit} noValidate>
         <Card className="p-5 sm:p-6">
           <DogFields form={form} />
-          {existing ? (
+          {!existing && !presetClient ? (
             <div className="mt-5">
+              <SelectInput
+                label="Whose dog?"
+                hint="Optional. You can add the dog now and link their people any time."
+                placeholder="Add people later"
+                value={ownerId}
+                onChange={(e) => setOwnerId(e.target.value)}
+                options={clients.filter((c) => !c.archived).map((c) => ({ value: c.id, label: clientName(c) }))}
+              />
+            </div>
+          ) : null}
+          {existing ? (
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <SelectInput
+                label="Lives at"
+                hint="Set automatically when you link a person."
+                placeholder="No home yet"
+                options={households.map((h) => ({ value: h.id, label: h.name }))}
+                {...form.register('householdId')}
+              />
               <SelectInput
                 label="Status"
                 options={[
@@ -191,7 +204,9 @@ export function DogFormPage() {
             </div>
           ) : null}
         </Card>
-        {existing ? <RelationshipEditor dog={existing} links={links.filter((l) => l.dogId === existing.id)} /> : null}
+        {existing ? (
+          <RelationshipEditor dog={existing} links={links.filter((l) => l.dogId === existing.id)} onHome={(home) => form.setValue('householdId', home)} />
+        ) : null}
         <FormActions>
           {existing && !existing.archived ? (
             <Button
@@ -225,7 +240,7 @@ export function DogFormPage() {
   );
 }
 
-function RelationshipEditor({ dog, links }: { dog: Dog; links: ClientDogRelationship[] }) {
+function RelationshipEditor({ dog, links, onHome }: { dog: Dog; links: ClientDogRelationship[]; onHome: (householdId: string) => void }) {
   const clients = usePractice((s) => s.clients);
   const [clientId, setClientId] = useState('');
   const [role, setRole] = useState<RelationshipRole>('guardian');
@@ -237,7 +252,12 @@ function RelationshipEditor({ dog, links }: { dog: Dog; links: ClientDogRelation
     try {
       const w = batchWriter();
       w.create<ClientDogRelationship>('clientDogs', { clientId, dogId: dog.id, role, isPrimary: links.filter((l) => !l.endDate).length === 0, startDate: todayISO(), endDate: null });
+      // A dog with no current people (e.g. added first) moves into this person's home.
+      const home = clientMap.get(clientId)?.householdId;
+      const moveIn = home && home !== dog.householdId && links.every((l) => l.endDate) ? home : null;
+      if (moveIn) w.update<Dog>('dogs', dog.id, { householdId: moveIn });
       await w.commit();
+      if (moveIn) onHome(moveIn);
       setClientId('');
       toast('Person linked');
     } catch (err) {

@@ -89,7 +89,8 @@ service cloud.firestore {
       return nonEmpty('name', 80)
         && data().sex in ['female', 'male', 'unknown']
         && data().status in ['active', 'paused', 'graduated', 'archived']
-        && nonEmpty('householdId', 64)
+        // Optional: a dog can be added before its people and home.
+        && (!('householdId' in data()) || data().householdId == null || nonEmpty('householdId', 64))
         && stringList('concerns', 40)
         && data().safetyNotes is list && data().safetyNotes.size() <= 20
         && optIsoDate('birthDate') && optStr('summary', 5000)

@@ -217,3 +217,30 @@ test('Haley completes the full client workflow', async ({ page }) => {
     await expect(page.getByText(lastName)).toHaveCount(0);
   });
 });
+
+test('a pup can be added before its people, then linked during client intake', async ({ page }) => {
+  const dogName = unique('Pip');
+  const lastName = unique('Firstpup');
+  await signInAsHaley(page);
+
+  await page.goto('/dogs/new');
+  await page.getByRole('textbox', { name: /^Name/ }).fill(dogName);
+  await page.getByRole('button', { name: 'Add dog' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: dogName })).toBeVisible();
+  await expect(page.getByText('No people linked yet.')).toBeVisible();
+
+  await page.getByRole('link', { name: `New client for ${dogName}` }).click();
+  await expect(page.getByLabel('Already added their dog?')).toHaveValue(/.+/);
+  await page.getByLabel('First name').fill('Sky');
+  await page.getByLabel('Last name').fill(lastName);
+  await page.getByLabel('Neighborhood').fill('Astoria');
+  await page.getByRole('button', { name: 'Create client' }).click();
+
+  // The same dog (not a duplicate) now has its person and home.
+  await expect(page.getByRole('heading', { level: 1, name: dogName })).toBeVisible();
+  await expect(page.getByRole('link', { name: new RegExp(`Sky ${lastName}`) }).first()).toBeVisible();
+  await expect(page.getByText('Astoria').first()).toBeVisible();
+  await page.goto('/dogs');
+  await page.getByPlaceholder(/Filter by name/).fill(dogName);
+  await expect(page.getByRole('list', { name: 'Dogs' }).getByRole('listitem')).toHaveCount(1);
+});

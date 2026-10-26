@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useFieldArray, useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -142,9 +143,14 @@ export function IntakePage() {
   const hhForm = useForm<HouseholdValues>({ resolver: zodResolver(householdSchema), defaultValues: { mode: 'new', members: [] } });
   const dogForm = useForm<DogFormValues>({
     resolver: zodResolver(dogSchema),
-    defaultValues: { name: '', sex: 'unknown', concerns: [], safetyNotes: [], status: 'active', householdId: 'pending' },
+    defaultValues: { name: '', sex: 'unknown', concerns: [], safetyNotes: [], status: 'active' },
   });
-  const includeDog = dogForm.watch('name') !== '' || !inquiry;
+  // The dog may already be in the app (added first), may be new, or may come later.
+  const { dogs, links } = usePractice();
+  const unlinkedDogs = dogs.filter((d) => !d.archived && !links.some((l) => l.dogId === d.id && !l.endDate));
+  const [existingDogId, setExistingDogId] = useState(params.get('dog') ?? '');
+  const existingDog = unlinkedDogs.find((d) => d.id === existingDogId);
+  const includeDog = !existingDog && dogForm.watch('name') !== '';
 
   const submit = async () => {
     const okClient = await clientForm.trigger();
@@ -176,7 +182,11 @@ export function IntakePage() {
             }));
       const clientId = w.create<Client>('clients', { ...c, householdId } as Omit<Client, keyof RecordMeta>);
       let dogId: string | null = null;
-      if (includeDog) {
+      if (existingDog) {
+        dogId = existingDog.id;
+        w.update<Dog>('dogs', dogId, { householdId });
+        w.create<ClientDogRelationship>('clientDogs', { clientId, dogId, role: 'guardian', isPrimary: true, startDate: existingDog.acquisitionDate || todayISO(), endDate: null });
+      } else if (includeDog) {
         const d = dogSchema.parse({ ...dogForm.getValues(), householdId });
         dogId = w.create<Dog>('dogs', toDogRecord(d));
         w.create<ClientDogRelationship>('clientDogs', { clientId, dogId, role: 'guardian', isPrimary: true, startDate: d.acquisitionDate || todayISO(), endDate: null });
@@ -185,7 +195,7 @@ export function IntakePage() {
         w.create<FollowUp>('followUps', { title: `Reply to ${c.firstName}’s inquiry`, dueDate: isoDateOffset(1), status: 'open', clientId, dogId, notes: c.inquirySummary });
       }
       await w.commit();
-      toast(dogId ? `${c.firstName} and ${dogForm.getValues('name')} added` : `${c.firstName} added`);
+      toast(dogId ? `${c.firstName} and ${existingDog?.name ?? dogForm.getValues('name')} added` : `${c.firstName} added`);
       navigate(dogId && !inquiry ? `/dogs/${dogId}` : `/clients/${clientId}`);
     } catch (err) {
       toast(friendlyError(err), 'error');
@@ -212,8 +222,22 @@ export function IntakePage() {
           <HouseholdFields form={hhForm} allowExisting />
         </Card>
         <Card className="p-5 sm:p-6">
-          <SectionTitle>Dog{inquiry ? ' (optional)' : ''}</SectionTitle>
-          <DogFields form={dogForm} showHousehold={false} />
+          <SectionTitle>Dog (optional)</SectionTitle>
+          {unlinkedDogs.length ? (
+            <SelectInput
+              wrapClass="mb-5"
+              label="Already added their dog?"
+              placeholder="No, enter the dog below"
+              value={existingDogId}
+              onChange={(e) => setExistingDogId(e.target.value)}
+              options={unlinkedDogs.map((d) => ({ value: d.id, label: [d.name, d.breed].filter(Boolean).join(' · ') }))}
+            />
+          ) : null}
+          {existingDog ? (
+            <p className="text-[0.9375rem] text-fg-muted">{existingDog.name} will be linked to this client and their home.</p>
+          ) : (
+            <DogFields form={dogForm} />
+          )}
         </Card>
         <FormActions>
           <Button variant="secondary" onClick={() => navigate(-1)}>

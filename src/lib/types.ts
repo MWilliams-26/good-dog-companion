@@ -73,7 +73,8 @@ export interface Dog extends RecordMeta {
   weightLbs?: number;
   coat?: string;
   photoPath?: string;
-  householdId: string;
+  /** The home the dog lives in. Empty until the dog is linked to a person. */
+  householdId?: string;
   acquisition?: string;
   acquisitionDate?: ISODate;
   rescueOrg?: string;

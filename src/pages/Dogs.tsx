@@ -35,7 +35,7 @@ export function DogsPage() {
       return true;
     })
     .filter((d) => !concern || d.concerns.includes(concern))
-    .filter((d) => !q.trim() || matches([d.name, d.breed, hhMap.get(d.householdId)?.name, d.concerns.join(' ')].join(' '), q))
+    .filter((d) => !q.trim() || matches([d.name, d.breed, hhMap.get(d.householdId ?? '')?.name, d.concerns.join(' ')].join(' '), q))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const counts = {
@@ -75,7 +75,7 @@ export function DogsPage() {
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Dogs">
           {list.map((d) => (
-            <DogCard key={d.id} dog={d} people={currentLinksForDog(links, d.id).map((l) => clientName(clientMap.get(l.clientId)).split(' ')[0])} household={hhMap.get(d.householdId)?.name} />
+            <DogCard key={d.id} dog={d} people={currentLinksForDog(links, d.id).map((l) => clientName(clientMap.get(l.clientId)).split(' ')[0])} household={hhMap.get(d.householdId ?? '')?.name} />
           ))}
         </ul>
       )}
@@ -100,7 +100,7 @@ function DogCard({ dog, people, household }: { dog: Dog; people: string[]; house
             ) : null}
           </div>
           <p className="mt-0.5 truncate text-sm text-fg-muted">{[dog.breed, ageFrom(dog.birthDate, dog.ageNote), dog.sex !== 'unknown' ? dog.sex : null].filter(Boolean).join(' · ')}</p>
-          <p className="mt-0.5 truncate text-sm text-fg-muted">{people.length ? `with ${people.join(' & ')}` : household}</p>
+          <p className="mt-0.5 truncate text-sm text-fg-muted">{people.length ? `with ${people.join(' & ')}` : (household ?? 'No people linked yet')}</p>
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {dog.status !== 'active' ? <Tag tone="honey">{DOG_STATUS[dog.status]}</Tag> : null}
             {dog.concerns.slice(0, 3).map((c) => (

@@ -40,7 +40,7 @@ export function searchPractice(query: string, data: { dogs: Dog[]; clients: Clie
   const households = new Map(data.households.map((h) => [h.id, h]));
   const hits: SearchHit[] = [];
   for (const d of data.dogs) {
-    const hh = households.get(d.householdId);
+    const hh = households.get(d.householdId ?? '');
     const hay = [d.name, d.breed, d.coat, d.concerns.join(' '), d.summary, hh?.name, hh?.neighborhood, d.rescueOrg].filter(Boolean).join(' ');
     const s = score(d.name, hay, query);
     if (s) hits.push({ kind: 'dog', id: d.id, title: d.name, subtitle: [d.breed, hh?.name].filter(Boolean).join(' · '), score: s + (d.archived ? -0.5 : 0) });

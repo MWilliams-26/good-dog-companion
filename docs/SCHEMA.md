@@ -39,7 +39,7 @@ Dates without a time (`date`, `startDate`, `dueDate`…) are ISO `YYYY-MM-DD` st
 | `authorizedUsers/{uid}` | Who may use the app. **Admin SDK only** (`scripts/grant-access.mjs`). | `email`, `displayName`, `role` (`owner`/`staff`), `active` |
 | `households` | A home shared by clients and dogs | `name`, `neighborhood`, `address`, `homeType`, `accessNotes`, `members[]`, `otherAnimals` |
 | `clients` | People | `firstName`, `lastName`, contact fields, `preferredContact`, `status` (`inquiry`/`new`/`active`/`returning`/`inactive`), `householdId`, `notes` (shareable), `privateNotes`, `inquiryDate`, `inquirySummary` |
-| `dogs` | Dog profiles | `name`, `breed`, `sex`, `birthDate`/`ageNote`, `weightLbs`, `householdId`, `acquisition`, `rescueOrg`, `vetClinic`, `concerns[]` (tags), `safetyNotes[]` (`level`, `text`), `summary`, `status`, `photoPath` |
+| `dogs` | Dog profiles | `name`, `breed`, `sex`, `birthDate`/`ageNote`, `weightLbs`, `householdId` (optional: a dog can be added before its people; it takes the home of the first person linked), `acquisition`, `rescueOrg`, `vetClinic`, `concerns[]` (tags), `safetyNotes[]` (`level`, `text`), `summary`, `status`, `photoPath` |
 | `clientDogs` | Client ↔ dog relationship with history | `clientId`, `dogId`, `role` (guardian, co-guardian, caregiver, foster, former guardian), `isPrimary`, `startDate`, `endDate` (null = current). Rules forbid rewiring a relationship; end it and create a new one. |
 | `assessmentTemplates` | The editable template Haley customizes | `name`, `sections[]`, `modules[]`, `currentVersion`, `currentVersionId` |
 | `assessmentTemplateVersions/{templateId}_v{n}` | Immutable published snapshot. Assessments reference one. | full definition, `templateId`, `version`, `changeNote` |
