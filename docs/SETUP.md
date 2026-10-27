@@ -22,7 +22,8 @@ The dev server proxies emulator traffic on the same origin (see `vite.config.ts`
 npm run typecheck
 npm test               # unit tests: assessment logic, reports, CSV, search
 npm run test:rules     # Firestore + Storage security rules on separate emulator ports
-npm run test:e2e       # Playwright, desktop + phone; needs `npm run emulators` running.
+npm run test:e2e       # Playwright: desktop Chrome + iPhone (WebKit); needs `npm run emulators` running.
+                       # First time: npx playwright install --with-deps chromium webkit
                        # Resets and reseeds the emulator first.
 ```
 

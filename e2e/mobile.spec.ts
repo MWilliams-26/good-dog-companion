@@ -26,3 +26,15 @@ test('phone: quick add sheet and session note entry', async ({ page }) => {
   await page.getByRole('radio', { name: 'Quick notes' }).check({ force: true });
   await expect(page.getByRole('textbox', { name: 'Notes' })).toBeVisible();
 });
+
+test('phone: a photo taken for a dog shows on the profile and stays after reload', async ({ page }) => {
+  await signInAsHaley(page);
+  await page.goto('/dogs/d_theo');
+  await expect(page.getByRole('heading', { level: 1, name: 'Theo' })).toBeVisible();
+  await page.locator('input[type=file]').first().setInputFiles('public/pwa-512.png');
+  const photo = page.locator('section[aria-labelledby="dog-name"] img');
+  const loaded = () => expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0).catch(() => false)).toBe(true);
+  await loaded();
+  await page.reload();
+  await loaded();
+});

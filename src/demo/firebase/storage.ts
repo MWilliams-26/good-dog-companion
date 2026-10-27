@@ -1,5 +1,7 @@
 // Demo-build stand-in for `firebase/storage`: uploaded photos and PDFs are kept
-// in this browser's IndexedDB.
+// in this browser's IndexedDB as raw bytes (WebKit, including Safari Private
+// Browsing, refuses to store Blobs there).
+type Stored = { type: string; bytes: ArrayBuffer };
 type Ref = { fullPath: string };
 
 const urls = new Map<string, string>();
@@ -22,17 +24,17 @@ export const connectStorageEmulator = (..._args: unknown[]) => undefined;
 export const ref = (_storage: unknown, path: string): Ref => ({ fullPath: path });
 
 export async function uploadBytes(r: Ref, blob: Blob, meta?: { contentType?: string }) {
-  const typed = meta?.contentType && meta.contentType !== blob.type ? new Blob([blob], { type: meta.contentType }) : blob;
-  await files('readwrite', (s) => s.put(typed, r.fullPath));
+  const stored: Stored = { type: meta?.contentType || blob.type, bytes: await blob.arrayBuffer() };
+  await files('readwrite', (s) => s.put(stored, r.fullPath));
   return { ref: r };
 }
 
 export async function getDownloadURL(r: Ref) {
   const cached = urls.get(r.fullPath);
   if (cached) return cached;
-  const blob = await files<Blob | undefined>('readonly', (s) => s.get(r.fullPath));
-  if (!blob) throw Object.assign(new Error('File not found'), { code: 'storage/object-not-found' });
-  const url = URL.createObjectURL(blob);
+  const stored = await files<Stored | undefined>('readonly', (s) => s.get(r.fullPath));
+  if (!stored) throw Object.assign(new Error('File not found'), { code: 'storage/object-not-found' });
+  const url = URL.createObjectURL(new Blob([stored.bytes], { type: stored.type }));
   urls.set(r.fullPath, url);
   return url;
 }

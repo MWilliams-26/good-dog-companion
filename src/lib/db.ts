@@ -124,7 +124,7 @@ export function useRecord<T>(name: string, id: string | undefined | null): Live<
 
 /** User-facing message for a failed Firestore/Storage call. Never includes record contents. */
 export function friendlyError(err: unknown): string {
-  const code = (err as { code?: string })?.code ?? '';
+  const code = String((err as { code?: unknown })?.code ?? '');
   if (code.includes('permission-denied')) return 'You don’t have permission to do that. Try signing in again.';
   if (code.includes('unavailable')) return 'You appear to be offline. Changes will sync when you reconnect.';
   if (code.includes('not-found')) return 'That record no longer exists.';

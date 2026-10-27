@@ -23,7 +23,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 } }, testIgnore: /mobile\.spec/ },
-    { name: 'mobile', use: { ...devices['Pixel 7'] }, testMatch: /mobile\.spec/ },
+    { name: 'mobile', use: { ...devices['iPhone 14'] }, testMatch: /mobile\.spec/ },
   ],
   webServer: demo
     ? {
